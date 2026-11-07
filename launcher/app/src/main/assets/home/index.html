@@ -1,0 +1,743 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Project Illusion</title>
+<style>
+/* Project Illusion Home, run by the launcher (HomeActivity.java) in a WebView. Fixed 1280×720 stage scaled to the screen.
+   Fonts are bundled (SIL OFL). */
+@font-face{font-family:'Bricolage Grotesque';font-weight:200 800;src:url(fonts/bricolage.woff2) format('woff2')}
+@font-face{font-family:'Instrument Sans';font-weight:400 600;src:url(fonts/instrument-sans.woff2) format('woff2')}
+@font-face{font-family:'JetBrains Mono';font-weight:400 700;src:url(fonts/jetbrains-mono.woff2) format('woff2')}
+:root{
+  color-scheme:dark;
+  --ink:#0B0D17; --panel:#13162A; --panel2:#1B1F3A; --line:#2A2F52;
+  --fg:#ECEAF7; --dim:#8F93B8; --faint:#5B5F80;
+  --focus:#FF6B3D; --measure:#5ED6FF; --ok:#7EF0B0; --warn:#FFC857; --bad:#FF5C7A;
+  --display:'Bricolage Grotesque','Avenir Next',system-ui,sans-serif;
+  --body:'Instrument Sans',system-ui,-apple-system,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--ink);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+#stage{position:absolute;left:0;top:0;width:1280px;height:720px;transform-origin:0 0;overflow:hidden;font-family:var(--body);background:var(--ink);user-select:none;-webkit-user-select:none}
+#bg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.scr{position:absolute;inset:0;z-index:1}
+.shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(11,13,23,.92) 0%,rgba(11,13,23,.55) 55%,rgba(11,13,23,.25) 100%),linear-gradient(0deg,rgba(11,13,23,.9) 0%,rgba(11,13,23,0) 45%)}
+.dark{position:absolute;inset:0;background:rgba(11,13,23,.86)}
+
+/* topbar (shared across screens) */
+.topbar{position:absolute;z-index:4;left:64px;top:24px;display:flex;align-items:center;gap:18px;font-family:var(--mono);font-size:13px;color:var(--dim)}
+.topbar .bm{font-family:var(--display);font-weight:700;font-size:18px;color:var(--fg);letter-spacing:-.01em;margin-right:8px}
+.topbar .bm i{font-style:normal;color:var(--focus)}
+.tabs{display:flex;gap:4px}
+.tab{position:relative;font-family:var(--mono);font-size:13px;color:var(--dim);padding:3px 12px;border-radius:999px;border:1px solid transparent}
+.tab[aria-current="true"]{color:var(--fg);border-color:var(--line);background:rgba(27,31,58,.8)}
+.tab.on{transform:none;color:var(--fg);border-color:var(--focus)}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-right:6px;box-shadow:0 0 10px var(--ok)}
+.dot.off{background:var(--bad);box-shadow:0 0 10px var(--bad)}
+
+/* focusables */
+.f{position:absolute;outline:0;transition:transform .22s cubic-bezier(.2,.9,.2,1.25),border-color .2s,background .2s}
+.f.on{transform:translateY(-5px);border-color:var(--focus)!important;background:rgba(27,31,58,.95)}
+.f.tab,.f.ico{position:relative}
+
+/* home */
+.hello{position:absolute;left:64px;top:96px}
+.hello h2{font-family:var(--display);font-weight:300;font-size:76px;line-height:.92;letter-spacing:-.035em;margin:0}
+.hello h2 b{font-weight:800}
+.bigclock{position:absolute;right:64px;top:50px;text-align:right}
+.bigclock .t{font-family:var(--display);font-weight:200;font-size:100px;line-height:.85;letter-spacing:-.05em;font-variant-numeric:tabular-nums}
+.bigclock .t span{color:var(--focus);font-weight:400}
+.bigclock .d{font-family:var(--mono);font-size:17px;line-height:1.2;color:rgba(236,234,247,.75);margin-top:6px}
+.bigclock .icons{margin-bottom:8px}
+/* weather for the theme's place, on its own line between the time and the date */
+.bigclock .wx{display:flex;justify-content:flex-end;align-items:center;gap:9px;margin-top:5px;height:28px}
+.bigclock .wx[hidden]{display:none}
+.bigclock .wx svg{width:24px;height:24px;flex:none}
+.bigclock .wx b{font-family:var(--display);font-weight:300;font-size:28px;line-height:1;letter-spacing:-.03em;color:var(--fg)}
+.bigclock .wx span{font-family:var(--mono);font-size:16px;color:rgba(236,234,247,.75)}
+.resume{left:64px;top:268px;width:1152px;height:156px;display:flex;border:1px solid rgba(255,255,255,.12);border-radius:14px;overflow:hidden;background:rgba(17,20,38,.94);text-align:left}
+.resume .poster{position:relative;width:230px;flex:none;background:radial-gradient(circle at 30% 35%,#E5484D 0,#8A1F33 45%,#2A0D19 100%);background-size:cover;background-position:center;display:flex;flex-direction:column;justify-content:flex-end;padding:16px 18px;font-family:var(--display);font-weight:800;font-size:46px;line-height:.9;letter-spacing:-.03em}
+.resume .poster::before{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.78) 0%,rgba(0,0,0,.15) 70%)}
+.resume .poster>*{position:relative}
+.resume .poster.art{background-size:auto 150%!important;background-position:70% 18%!important}
+.resume .poster.art::before{background:linear-gradient(90deg,rgba(0,0,0,.85) 0%,rgba(0,0,0,.55) 45%,rgba(0,0,0,.08) 80%),linear-gradient(0deg,rgba(0,0,0,.6) 0%,transparent 55%)}
+.resume .poster small{font-family:var(--mono);font-size:11px;font-weight:400;opacity:.75;letter-spacing:0;margin-bottom:6px}
+.resume .body{flex:1;padding:18px 24px;display:flex;flex-direction:column;gap:5px;min-width:0;background:linear-gradient(90deg,color-mix(in srgb,var(--hc,#E5484D) 10%,transparent),transparent 55%)}
+.resume .next{width:300px;flex:none;border-left:1px dashed var(--line);padding:18px 22px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.resume .next b{font-family:var(--display);font-weight:600;font-size:20px;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cmd{font-family:var(--mono);font-size:12px;color:var(--measure)}
+.resume h3{font-family:var(--display);font-weight:700;font-size:36px;line-height:1;letter-spacing:-.02em;margin:2px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta{font-family:var(--mono);font-size:12px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar{display:block;height:4px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:auto}
+.bar i{display:block;height:100%;background:var(--fg);border-radius:2px}
+.icons{display:flex;justify-content:flex-end;gap:10px;margin-bottom:10px}
+.ico{position:relative;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:rgba(19,22,42,.7);display:grid;place-items:center;color:var(--dim)}
+.ico svg{width:22px;height:22px}
+.ico.on{color:var(--fg);transform:translateY(-3px) rotate(0)}
+#settings.on svg{animation:spin 2.4s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.usbled{position:absolute;right:6px;top:6px;width:7px;height:7px;border-radius:50%;background:var(--warn);box-shadow:0 0 8px var(--warn)}
+.splash{position:absolute;inset:0;z-index:7;display:grid;place-items:center;transition:clip-path .55s cubic-bezier(.7,0,.2,1),opacity .4s;pointer-events:none}
+.splash span{font-family:var(--display);font-weight:800;font-size:120px;letter-spacing:-.05em;color:#fff}
+.splash small{position:absolute;bottom:60px;font-family:var(--mono);font-size:14px;color:rgba(255,255,255,.75)}
+.splash.out{opacity:0}
+
+
+/* 12-hour clock */
+.bigclock .t small{font-family:var(--mono);font-size:26px;font-weight:400;letter-spacing:0;color:var(--dim);margin-left:10px}
+
+/* Wi-Fi icon carries the state: bars and colour */
+#wifi{color:var(--wc,var(--dim))}
+#wifi .bar{stroke:var(--wc,currentColor);transition:opacity .3s,stroke .3s}
+#wifi .bar.off{opacity:.18}
+#wifi .x{display:none;stroke:var(--wc)}
+#wifi.offline .x{display:block}
+#wifi::after{content:"";position:absolute;inset:-1px;border-radius:50%;box-shadow:0 0 16px -2px var(--wc,transparent);opacity:.55;pointer-events:none}
+
+/* immersive room: the focused app's colour floods Home from the floor up */
+#room{position:absolute;inset:0;opacity:0;transition:opacity .7s ease,background .7s ease;pointer-events:none}
+#room.lit{opacity:1}
+/* the dock: five windows onto one night road (nightdrive.js); the focused app's city fills the room behind */
+#dock{position:absolute;left:64px;right:64px;top:470px;height:150px;display:grid;grid-template-columns:repeat(5,1fr);gap:14px;perspective:1000px;z-index:2}
+.f.win{position:relative;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.08);background:#070912;transform-style:preserve-3d;transform-origin:50% 100%;transition:transform .45s cubic-bezier(.2,.9,.2,1.15),border-color .3s,box-shadow .4s;text-align:left}
+.win canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.win .glass{position:absolute;inset:0;background:linear-gradient(160deg,rgba(255,255,255,.09),transparent 38%),radial-gradient(46% 24% at 50% 84%,rgba(4,6,14,.5),transparent 100%);pointer-events:none}
+.win .wm{position:absolute;left:16px;bottom:14px;right:12px;font-family:var(--display);font-weight:800;font-size:21px;letter-spacing:-.035em;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:transform .45s cubic-bezier(.2,1.5,.3,1);text-shadow:0 0 12px rgba(4,6,14,.9),0 1px 3px rgba(4,6,14,.85)}
+.f.win:first-child{transform-origin:40% 100%}.f.win:last-child{transform-origin:60% 100%}
+/* the end windows lift a little less, so they keep a clear gap to their neighbour and stay at the margin */
+.f.win:first-child.on,.f.win:last-child.on{transform:rotateX(4deg) translateY(-8px) scale(1.025)!important}
+.f.win.on{border-color:var(--c)!important;background:#070912;transform:rotateX(4deg) translateY(-8px) scale(1.05);box-shadow:0 30px 100px -34px color-mix(in srgb,var(--c) 60%,transparent)}
+.f.win.on .wm{transform:translateZ(40px)}
+#trackbg,#track{position:absolute;left:0;top:430px;width:1280px;height:300px;z-index:1;pointer-events:none}
+.imm{position:absolute;left:0;top:0;width:1280px;height:720px;overflow:hidden;opacity:0;transform:translateY(10px);transition:opacity .45s ease,transform .45s cubic-bezier(.2,.8,.2,1);pointer-events:none}
+.imm.on{opacity:1;transform:none}
+.imm canvas,.imm .near{position:absolute;left:0;top:0;width:1340px;height:720px;transition:transform .6s cubic-bezier(.2,.8,.2,1)}
+.imm .near i{position:absolute;animation:flk 4s infinite}
+@keyframes flk{0%,38%,44%,68%,100%{opacity:1}40%{opacity:.12}42%{opacity:.8}70%{opacity:.25}}
+
+/* new for you: the apps as channels on a week guide, a spotlight with the art blended in */
+#nArt{position:absolute;right:0;top:0;width:900px;height:420px;transition:opacity .35s;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 42%),linear-gradient(0deg,transparent 0,#000 34%);-webkit-mask-composite:source-in;
+  mask-image:linear-gradient(90deg,transparent 0,#000 42%),linear-gradient(0deg,transparent 0,#000 34%);mask-composite:intersect}
+#nArtImg{position:absolute;inset:0;background-size:cover;background-position:center 30%}
+.nspot{position:absolute;left:64px;top:96px;width:640px;z-index:2}
+.kick{display:flex;gap:10px;align-items:center;font-family:var(--mono);font-size:12px;color:var(--dim)}
+.ntag{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid currentColor}
+.ntag.new{color:var(--ok)}.ntag.pick{color:var(--measure)}
+.nspot h2{font-family:var(--display);font-weight:800;font-size:60px;line-height:.95;letter-spacing:-.035em;margin:14px 0 10px;text-wrap:balance;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.nmeta{font-family:var(--mono);font-size:13px;color:var(--dim)}
+.nspot p{margin:12px 0 0;color:#C9CBE0;font-size:16px;max-width:52ch;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.why{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.why span{font-family:var(--mono);font-size:12px;color:#C9CBE0;background:rgba(11,13,23,.55);border:1px solid rgba(255,255,255,.08);border-radius:999px;padding:4px 11px}
+.why span b{font-weight:500;color:var(--fg)}
+.guide{position:absolute;left:64px;right:64px;top:404px;height:296px}
+.axis{position:absolute;left:156px;right:0;top:0;height:22px;font-family:var(--mono);font-size:11px;color:var(--faint)}
+.axis span{position:absolute;top:0}
+.now{position:absolute;left:156px;top:0;bottom:0;width:2px;background:var(--focus);box-shadow:0 0 12px var(--focus);z-index:1}
+.grow2{position:absolute;left:0;right:0;height:50px;border-top:1px solid rgba(42,47,82,.6)}
+.chan{position:absolute;left:0;top:0;width:146px;height:50px;display:flex;flex-direction:column;justify-content:center}
+.chan b{font-family:var(--display);font-weight:800;font-size:17px;letter-spacing:-.02em;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chan small{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:3px}
+.f.prog{top:6px;height:38px;border-radius:9px;border:1px solid var(--line);background:rgba(19,22,42,.92);padding:3px 10px 3px 4px;display:flex;align-items:center;gap:9px;overflow:hidden;text-align:left}
+.f.prog.on{transform:translateY(-3px);background:rgba(36,30,52,.98);z-index:2}
+.prog.pick{border-style:dashed}
+.prog .th{flex:none;width:44px;height:30px;border-radius:5px;background-size:cover;background-position:center}
+.prog .tx{min-width:0;display:flex;flex-direction:column}
+.prog b{font-family:var(--display);font-weight:600;font-size:13.5px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prog small{font-family:var(--mono);font-size:10px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prog .nd{position:absolute;right:7px;top:7px;width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.tab .tdot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--ok);margin-left:6px;vertical-align:2px;box-shadow:0 0 8px var(--ok)}
+
+/* resume wall */
+.rhead{position:absolute;left:64px;right:64px;top:74px;display:flex;align-items:flex-end;gap:18px}
+.rhead h2{font-family:var(--display);font-weight:800;font-size:44px;letter-spacing:-.03em;line-height:1;margin:0}
+.rhead h2 span{color:var(--focus)}
+.rhead .sub{white-space:nowrap;font-family:var(--mono);font-size:12px;color:var(--dim);padding-bottom:5px}
+.flt{position:relative;top:auto;left:auto;white-space:nowrap;font-family:var(--mono);font-size:12px;color:var(--dim);border:1px solid var(--line);border-radius:999px;padding:4px 10px;background:rgba(19,22,42,.8)}
+.flt[aria-pressed="true"]{color:var(--fg);border-color:var(--measure)}
+.flt.on{transform:translateY(-3px)}
+.flt b{font-weight:500;color:var(--faint);margin-left:4px}
+.fwrap{margin-left:auto;display:flex;gap:6px;padding-bottom:2px;flex-wrap:nowrap}
+#wall{position:absolute;left:64px;top:142px;width:1152px;height:556px;display:grid;grid-template-columns:repeat(5,1fr);grid-auto-rows:101px;gap:12px}
+.rt{position:relative;display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:rgba(19,22,42,.9);text-align:left;min-width:0}
+.rt .cv{width:66px;flex:none;display:flex;align-items:flex-end;padding:8px;font-family:var(--display);font-weight:800;font-size:24px;letter-spacing:-.04em;line-height:.9;color:rgba(255,255,255,.92);background-size:cover;background-position:center}
+.rt .in{flex:1;min-width:0;padding:9px 11px 10px;display:flex;flex-direction:column;gap:2px}
+.rt b{font-family:var(--display);font-weight:600;font-size:15.5px;line-height:1.15;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rt .ap{font-family:var(--mono);font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rt .lf{font-family:var(--mono);font-size:10.5px;color:var(--dim);white-space:nowrap;display:flex;justify-content:space-between;gap:6px}
+.rt.old{opacity:.5}
+.rt.old .lf span:last-child{color:var(--warn)}
+.empty{position:absolute;left:64px;top:160px;font-family:var(--mono);font-size:14px;color:var(--dim)}
+
+/* all apps */
+#appgrid{position:absolute;left:64px;top:150px;width:1152px;display:grid;grid-template-columns:repeat(6,1fr);grid-auto-rows:118px;gap:14px}
+.ag{position:relative;border:1px solid var(--line);border-radius:14px;background:rgba(19,22,42,.9);display:flex;flex-direction:column;justify-content:space-between;padding:12px 14px;text-align:left;overflow:hidden;min-width:0}
+.ag .mono{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:18px;letter-spacing:-.03em;color:#0B0D17}
+.ag b{font-family:var(--display);font-weight:600;font-size:16px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.ag small{font-family:var(--mono);font-size:10px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.ag.on{transform:translateY(-5px) scale(1.03)}
+.ag.sys .mono{background:transparent!important;border:1.5px solid var(--line);color:var(--dim)}
+
+/* dial */
+#dial{position:absolute;inset:0;z-index:8;background:rgba(3,4,10,.58)}
+#dial svg{position:absolute;left:0;top:0;width:1280px;height:720px}
+.seg{transition:transform .32s cubic-bezier(.2,.9,.2,1.3),opacity .25s;transform-origin:640px 360px}
+#dial.in .seg{transform:scale(.6) rotate(-25deg);opacity:0}
+.seg path{fill:rgba(27,31,58,.92);stroke:rgba(255,255,255,.1);stroke-width:1;transition:fill .15s}
+.seg text{font-family:var(--mono);font-size:15px;fill:var(--fg);text-anchor:middle;dominant-baseline:middle;pointer-events:none}
+.seg text.s2{font-size:11px;fill:var(--dim)}
+.seg.sel path{fill:var(--focus)}
+.seg.sel text{fill:#1A0A03}
+#dialSweep{transition:transform .2s cubic-bezier(.2,.9,.2,1.3);transform-origin:640px 360px}
+/* dial-only mode: the overlay drawn over other apps (DialService) */
+.dialonly,.dialonly body,.dialonly #stage{background:transparent}
+.dialonly #bg,.dialonly .scr,.dialonly .topbar{display:none}
+
+/* toasts, glitch */
+#toasts{position:absolute;right:28px;bottom:28px;z-index:10;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none}
+.toast{font-family:var(--mono);font-size:13px;background:rgba(10,12,22,.94);border:1px solid var(--line);border-left:3px solid var(--focus);padding:9px 14px;font-family:var(--body);font-size:14px;border-radius:6px;max-width:620px;animation:tin .28s cubic-bezier(.2,.9,.2,1.2)}
+.toast b{font-weight:600;color:var(--fg)}
+.toast.out{transition:opacity .3s,transform .3s;opacity:0;transform:translateX(30px)}
+@keyframes tin{from{transform:translateX(40px);opacity:0}}
+.glitch .scr:not([hidden]){animation:gl .34s steps(3) 1}
+@keyframes gl{
+ 0%{clip-path:inset(12% 0 64% 0);transform:translateX(-18px);filter:hue-rotate(80deg)}
+ 33%{clip-path:inset(58% 0 8% 0);transform:translateX(14px);filter:hue-rotate(-60deg) saturate(2)}
+ 66%{clip-path:inset(30% 0 40% 0);transform:translateX(-6px)}
+ 100%{clip-path:inset(0 0 0 0);transform:none;filter:none}}
+@media (prefers-reduced-motion:reduce){.glitch .scr:not([hidden]){animation:none}.f,.seg{transition:none}}
+</style></head>
+<body>
+<div id="stage">
+  <canvas id="bg" width="640" height="360"></canvas>
+
+  <div class="topbar">
+    <span class="bm">project<i>_</i>illusion</span>
+    <nav class="tabs">
+      <button class="f tab" id="tab-home" data-f data-act="go" data-v="home" data-accent="#ECEAF7" aria-current="true" tabindex="-1">home</button>
+      <button class="f tab" id="tab-resume" data-f data-act="go" data-v="resume" data-accent="#5ED6FF" tabindex="-1">continue watching</button>
+      <button class="f tab" id="tab-new" data-f data-act="go" data-v="new" data-accent="#7EF0B0" tabindex="-1">new for you<i class="tdot" id="newDot" hidden></i></button>
+    </nav>
+  </div>
+
+  <!-- HOME -->
+  <section class="scr" id="s-home">
+    <div class="shade"></div>
+    <div class="imm" id="immA"><canvas></canvas><canvas></canvas><canvas></canvas><div class="near"></div></div>
+    <div class="imm" id="immB"><canvas></canvas><canvas></canvas><canvas></canvas><div class="near"></div></div>
+    <div id="room"></div>
+    <div class="hello"><h2 id="hello">Good evening,<br><b>Alex.</b></h2></div>
+    <div class="bigclock"><div class="icons">
+      <button class="f ico" id="wifi" data-f data-act="wifi" data-accent="#7EF0B0" tabindex="-1" aria-label="Wi-Fi settings"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path class="bar" d="M12 18l.01 0" stroke-width="3"/><path class="bar" d="M9.172 15.172a4 4 0 0 1 5.656 0"/><path class="bar" d="M6.343 12.343a8 8 0 0 1 11.314 0"/><path class="bar" d="M3.515 9.515c4.686 -4.687 12.284 -4.687 16.97 0"/><path class="x" d="M3 3l18 18"/></svg></button>
+      <button class="f ico" id="usb" data-f data-act="usb" data-accent="#FFC857" tabindex="-1" aria-label="USB drive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 19a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M12 17v-11.5"/><path d="M7 10v3l5 3"/><path d="M12 14.5l5 -2v-2.5"/><path d="M16 10h2v-2h-2z"/><path d="M6 9a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M10 5.5h4l-2 -2.5z"/></svg><i class="usbled" id="usbled" hidden></i></button>
+      <button class="f ico" id="settings" data-f data-act="settings" data-accent="#ECEAF7" tabindex="-1" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z"/><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/></svg></button>
+      <button class="f ico" id="allapps" data-f data-act="go" data-v="apps" data-accent="#5ED6FF" tabindex="-1" aria-label="All apps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h6v6h-6z"/><path d="M14 4h6v6h-6z"/><path d="M4 14h6v6h-6z"/><path d="M14 14h6v6h-6z"/></svg></button>
+    </div><div class="t" id="clk">21<span>:</span>40</div>
+      <div class="d" id="clkD"></div>
+      <div class="wx" id="wx" hidden><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg><b></b><span></span></div></div>
+
+    <button class="f resume" id="resume" data-f data-act="hero" data-accent="#E5484D" tabindex="-1">
+      <div class="poster" id="hPoster"><small id="hApp"></small><span id="hEp"></span></div>
+      <div class="body">
+        <span class="cmd">continue watching</span>
+        <h3 id="hTitle">Nothing in progress</h3>
+        <span class="meta" id="hMeta">start something from the dock below</span>
+        <div class="bar"><i id="hBar" style="width:0%"></i></div>
+      </div>
+      <div class="next">
+        <span class="cmd">up next</span>
+        <b id="nTitle">—</b>
+        <span class="meta" id="nMeta"></span>
+      </div>
+    </button>
+
+    <canvas id="trackbg"></canvas><canvas id="track"></canvas>
+    <div id="dock"></div>
+  </section>
+
+  <!-- NEW FOR YOU -->
+  <section class="scr" id="s-new" hidden>
+    <div class="dark" style="background:rgba(11,13,23,.72)"></div>
+    <div id="nArt"><div id="nArtImg"></div></div>
+    <div style="position:absolute;left:0;right:0;top:0;height:130px;background:linear-gradient(180deg,rgba(11,13,23,.88),transparent);pointer-events:none"></div>
+    <div class="nspot">
+      <div class="kick" id="fKick"></div>
+      <h2 id="fTitle"></h2>
+      <div class="nmeta" id="fMeta"></div>
+      <p id="fDesc"></p>
+      <div class="why" id="fWhy"></div>
+    </div>
+    <div class="guide" id="nGuide"><div class="axis" id="nAxis"></div><div class="now"></div><div id="nRows"></div></div>
+    <div class="empty" id="newEmpty" hidden>Nothing new from your apps right now. New episodes and picks show up here as the apps publish them.</div>
+  </section>
+
+  <!-- RESUME WALL -->
+  <section class="scr" id="s-resume" hidden>
+    <div class="dark"></div>
+    <div class="rhead">
+      <h2>Resume<span>.</span></h2>
+      <span class="sub" id="rSub"></span>
+      <div class="fwrap" id="filters"></div>
+    </div>
+    <div id="wall"></div>
+    <div class="empty" id="wallEmpty" hidden>Nothing unfinished right now. Start something and it will wait for you here.</div>
+  </section>
+
+  <!-- ALL APPS -->
+  <section class="scr" id="s-apps" hidden>
+    <div class="dark"></div>
+    <div class="rhead"><h2>All apps<span>.</span></h2><span class="sub" id="agSub"></span></div>
+    <div id="appgrid"></div>
+  </section>
+
+
+
+  <div id="dial" hidden><svg viewBox="0 0 1280 720" id="dialSvg"></svg></div>
+  <div id="toasts"></div>
+</div>
+
+<script src="nightdrive.js"></script>
+<script>
+(()=>{
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const stage=$('#stage');
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const DIAL_ONLY=location.hash==='#dial';
+if(DIAL_ONLY) document.documentElement.classList.add('dialonly');
+let S=1;
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- the launcher (HomeActivity.java); a stand-in when the page runs in a browser ---------- */
+const CK=window.CK||{
+  // in a browser, #apps=3 (or 4) trims the sample dock and #nobrand hides the project_illusion name
+  home:()=>JSON.stringify({name:'Alex',brand:!/nobrand/.test(location.hash),dock:[
+    {pkg:'com.netflix.ninja',label:'Netflix',color:'#E50914'},{pkg:'com.amazon.amazonvideo.livingroom',label:'Prime Video',color:'#1FA2F1'},
+    {pkg:'com.google.android.youtube.tv',label:'YouTube',color:'#FF3B30'},{pkg:'in.startv.hotstar',label:'JioHotstar',color:'#3D7BFF'},
+    {pkg:'com.crunchyroll.crunchyroid',label:'Crunchyroll',color:'#F47521'}].slice(0,+((/apps=(\d)/.exec(location.hash)||[])[1])||5),weather:{lat:16.3067,lon:80.4365,f:false}}),
+  shows:()=>JSON.stringify([{key:'k1',pkg:'com.netflix.ninja',app:'Netflix',color:'#E50914',title:'Rick and Morty',season:'3',episode:'10',position:997000,duration:1366000,time:Date.now()-3600e3,poster:''},
+    {key:'k2',pkg:'com.amazon.amazonvideo.livingroom',app:'Prime Video',color:'#1FA2F1',title:'Jathi Ratnalu',season:'',episode:'',position:6721000,duration:8607000,time:Date.now()-7200e3,poster:''}]),
+  apps:()=>JSON.stringify([{pkg:'com.netflix.ninja',label:'Netflix',color:'#E50914',sys:false},{pkg:'com.android.vending',label:'Google Play Store',color:'#34A853',sys:false}]),
+  status:()=>JSON.stringify({net:'Wi-Fi · good',online:true,usb:null}),
+  open:p=>console.log('open',p), resume:k=>console.log('resume',k), remove:k=>console.log('remove',k),
+  wifi:()=>{}, settings:()=>{}, usb:()=>{}, inputs:()=>{}, sleep:m=>{}, dialDone:()=>{}
+};
+const parse=(f,d)=>{try{const v=JSON.parse(f()); return v==null?d:v;}catch(e){console.error('bridge: '+e); return d}};
+
+/* ---------- apps: which of the tuned five, and their wordmarks ---------- */
+const APP_ID={'com.netflix.ninja':'netflix','com.amazon.amazonvideo.livingroom':'prime','com.google.android.youtube.tv':'youtube','in.startv.hotstar':'hotstar','com.crunchyroll.crunchyroid':'crunchyroll'};
+const WORDMARK={netflix:'NETFLIX',prime:'prime video',youtube:'YouTube',hotstar:'JioHotstar',crunchyroll:'crunchyroll'};
+const appKey=pkg=>APP_ID[pkg]||'other';
+const appShort=a=>({netflix:'netflix',prime:'prime video',youtube:'youtube',hotstar:'jiohotstar',crunchyroll:'crunchyroll'}[appKey(a.pkg)]||String(a.app||'').toLowerCase());
+const hueOf=s=>{let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))%360;return h;};
+const initials=t=>{const w=String(t).replace(/[^A-Za-z0-9 ]/g,'').split(' ').filter(Boolean);const k=w.filter(x=>(x.length>2&&x!=='The')||w.length===1);return (k.length?k:w).slice(0,2).map(x=>x[0].toUpperCase()).join('')||String(t)[0]||'?';};
+const cover=h=>`radial-gradient(circle at 30% 25%,hsl(${h} 75% 58%) 0,hsl(${h} 60% 32%) 55%,hsl(${h} 50% 14%) 100%)`;
+const mmss=ms=>{const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return h?`${h}:${String(m).padStart(2,'0')}:${String(x).padStart(2,'0')}`:`${m}:${String(x).padStart(2,'0')}`;};
+const minsLeft=s=>s.duration>s.position?Math.ceil((s.duration-s.position)/60000):0;
+const epOf=s=>s.season&&s.episode?`S${s.season} E${s.episode}`:s.episode?`E${s.episode}`:'';
+const agoOf=t=>{const d=Math.floor((Date.now()-t)/864e5);if(Date.now()-t<36e5*20&&new Date(t).getDate()===new Date().getDate())return 'today '+hm(t);return d<=1?'yesterday '+hm(t):d<7?['sun','mon','tue','wed','thu','fri','sat'][new Date(t).getDay()]+' '+hm(t):d+'d ago';};
+const hm=t=>{const d=new Date(t), h=d.getHours()%12||12;return h+':'+String(d.getMinutes()).padStart(2,'0')+' '+(d.getHours()<12?'am':'pm');};
+
+/* ---------- state ---------- */
+let HOME={name:'',dock:[]}, SHOWS=[], APPLIST=[], filter='all';
+
+function renderHome(){
+  HOME=parse(()=>CK.home(),{name:'',dock:[]});
+  const h=new Date().getHours(), part=h<5?'Good night':h<12?'Good morning':h<17?'Good afternoon':h<22?'Good evening':'Good night';
+  $('.topbar .bm').hidden=HOME.brand===false;
+  $('#hello').innerHTML=HOME.name?`${part},<br><b>${esc(HOME.name)}.</b>`:`${part}<b>.</b>`;
+  const dockKey=HOME.dock.map(a=>a.pkg+a.color).join();
+  if(dockKey!==renderHome.k){ renderHome.k=dockKey;
+    $('#dock').style.gridTemplateColumns=`repeat(${Math.max(1,Math.min(5,HOME.dock.length))},1fr)`;   // the windows share the dock's width
+    $('#dock').innerHTML=HOME.dock.slice(0,5).map((a,i)=>{const id=appKey(a.pkg), c=a.color||'#5ED6FF';
+      return `<button class="f win" id="d-${i}" data-f data-act="app" data-pkg="${esc(a.pkg)}" data-name="${esc(WORDMARK[id]||a.label)}" data-accent="${c}" tabindex="-1" style="--c:${c};--ry:${(i-2)*-5}deg"><canvas></canvas><div class="glass"></div><span class="wm" style="color:${id==='netflix'?c:'#fff'}">${esc(WORDMARK[id]||a.label)}</span></button>`;}).join('');
+    setTimeout(startDrive,60); }
+}
+function renderShows(){
+  SHOWS=parse(()=>CK.shows(),[]);
+  const s=SHOWS[0], n=SHOWS[1];
+  const P=$('#hPoster');
+  if(s){
+    P.style.background=s.poster?`url("${s.poster}") center/cover`:cover(hueOf(s.title)); P.classList.toggle('art',!!s.poster);
+    $('#resume').style.setProperty('--hc',s.color||'#E5484D');
+    $('#hApp').textContent=appShort(s); $('#hEp').innerHTML=epOf(s)?esc(epOf(s)).replace(' ','<br>'):esc(initials(s.title));
+    $('#hTitle').textContent=s.title;
+    const bits=[]; if(s.position>0)bits.push('paused at '+mmss(s.position)); if(minsLeft(s))bits.push(minsLeft(s)+'m left'); bits.push('last watched '+agoOf(s.time));
+    $('#hMeta').textContent=bits.join(' · ');
+    $('#hBar').style.width=(s.duration?Math.min(100,s.position/s.duration*100):3)+'%'; $('#hBar').style.background=s.color||'var(--fg)';
+    $('#resume').dataset.accent=s.color||'#E5484D'; $('#resume').dataset.key=s.key;
+  } else {
+    P.style.background=cover(220); P.classList.remove('art'); $('#hApp').textContent=''; $('#hEp').textContent='—';
+    $('#hTitle').textContent='Nothing in progress'; $('#hMeta').textContent='start something from the dock below'; $('#hBar').style.width='0%'; $('#resume').dataset.key='';
+  }
+  if(n){ $('#nTitle').textContent=n.title+(epOf(n)?' · '+epOf(n):''); $('#nMeta').textContent=[appShort(n),minsLeft(n)?minsLeft(n)+'m left':''].filter(Boolean).join(' · '); }
+  else { $('#nTitle').textContent='—'; $('#nMeta').textContent='nothing else unfinished'; }
+  renderWall();
+}
+function renderWall(){
+  const apps=[...new Set(SHOWS.map(appKey2))].slice(0,5);
+  if(filter!=='all'&&!apps.includes(filter)) filter='all';
+  $('#filters').innerHTML=['all',...apps].map(f=>{const s=SHOWS.find(x=>appKey2(x)===f);
+    return `<button class="f flt" id="flt-${esc(f)}" data-f data-act="filter" data-v="${esc(f)}" data-accent="${f==='all'?'#5ED6FF':(s&&s.color)||'#5ED6FF'}" aria-pressed="${f===filter}" tabindex="-1">${f==='all'?'all':esc(appShort(s))}<b>${f==='all'?SHOWS.length:SHOWS.filter(x=>appKey2(x)===f).length}</b></button>`;}).join('');
+  const list=SHOWS.map((s,i)=>[s,i]).filter(([s])=>filter==='all'||appKey2(s)===filter);
+  $('#rSub').textContent=`${list.length} unfinished · hold OK to remove`;
+  $('#wallEmpty').hidden=SHOWS.length>0;
+  $('#wall').innerHTML=list.map(([s,i])=>{const days=Math.floor((Date.now()-s.time)/864e5), old=days>30;
+    const cv=s.poster?`background-image:url('${s.poster}')`:`background:${cover(hueOf(s.title))}`;
+    return `<button class="f rt${old?' old':''}" id="r${i}" data-f data-act="show" data-i="${i}" data-accent="${s.color||'#5ED6FF'}" tabindex="-1">
+ <span class="cv" style="${cv}">${s.poster?'':esc(initials(s.title))}</span>
+ <span class="in"><b>${esc(s.title)}</b><span class="ap" style="color:${s.color||'var(--dim)'}">${esc(appShort(s))}${epOf(s)?' · '+epOf(s):''}</span>
+ <span class="lf"><span>${minsLeft(s)?minsLeft(s)+' min left':'up next'}</span><span>${old?'idle '+days+'d':esc(agoOf(s.time).replace(/ \d\d:\d\d$/,''))}</span></span>
+ <span class="bar"><i style="width:${s.duration?Math.min(100,s.position/s.duration*100):3}%;background:${s.color||'var(--fg)'}"></i></span></span></button>`;}).join('');
+}
+const appKey2=s=>s.pkg;
+function renderApps(){
+  APPLIST=parse(()=>CK.apps(),[]);
+  $('#agSub').textContent=`${APPLIST.length} apps on this TV`;
+  $('#appgrid').innerHTML=APPLIST.slice(0,24).map((a,i)=>{const g=a.label.length<=4?a.label:initials(a.label);
+    return `<button class="f ag${a.sys?' sys':''}" id="ag${i}" data-f data-act="openapp" data-i="${i}" data-accent="${a.color}" tabindex="-1"><span class="mono" style="background:${a.color}">${esc(g)}</span><span><b>${esc(a.label)}</b><small>${a.sys?'system':''}</small></span></button>`;}).join('');
+}
+
+
+/* ---------- status ---------- */
+function renderStatus(){const st=parse(()=>CK.status(),{});
+  const Q={excellent:['#7EF0B0',4],good:['#7EF0B0',3],wired:['#7EF0B0',4],fair:['#FFC857',2],weak:['#FF5C7A',1],offline:['#FF5C7A',0]}, q=Q[st.quality]||(st.online?Q.good:Q.offline);
+  const w=$('#wifi'); w.style.setProperty('--wc',q[0]); w.querySelectorAll('.bar').forEach((b,i)=>b.classList.toggle('off',i>=q[1])); w.classList.toggle('offline',q[1]===0);
+  w.setAttribute('aria-label','Wi-Fi '+(st.quality||(st.online?'on':'offline'))+', open Wi-Fi settings');
+  $('#usbled').hidden=!st.usb; $('#usb').dataset.label=st.usb?st.usb.name:'';}
+
+/* ---------- stage scaling ---------- */
+function fit(){const W=document.documentElement.clientWidth||innerWidth, H=document.documentElement.clientHeight||innerHeight; S=Math.min(W/1280,H/720); stage.style.transform=`scale(${S})`;
+  stage.style.left=((W-1280*S)/2)+'px'; stage.style.top=((H-720*S)/2)+'px';;}
+addEventListener('resize',fit);
+
+/* ---------- focus engine ---------- */
+const SCREENS=['home','resume','new','apps'];
+let screen='home', cur=null, overlay=null;
+const mem={home:'resume'};
+function rectOf(el){let x=0,y=0,n=el;while(n&&n!==stage){x+=n.offsetLeft;y+=n.offsetTop;n=n.offsetParent;}return{x,y,w:el.offsetWidth,h:el.offsetHeight};}
+function list(){return [...$$('.topbar [data-f]'),...$$(`#s-${screen} [data-f]`)].filter(e=>!e.hidden&&e.offsetParent!==null);}
+const ox=(a,b)=>Math.max(0,b.x-(a.x+a.w),a.x-(b.x+b.w)), oy=(a,b)=>Math.max(0,b.y-(a.y+a.h),a.y-(b.y+b.h));
+function neighbor(from,dir,els){
+  const a=rectOf(from), ac={x:a.x+a.w/2,y:a.y+a.h/2}; let best=null,bs=1e9,gap=0;
+  for(const el of els){ if(el===from) continue; const b=rectOf(el), bc={x:b.x+b.w/2,y:b.y+b.h/2}; let m,c;
+    if(dir==='right'){ if(b.x<a.x+a.w-4) continue; m=b.x-(a.x+a.w); c=oy(a,b)+Math.abs(bc.y-ac.y)*.05;}
+    else if(dir==='left'){ if(b.x+b.w>a.x+4) continue; m=a.x-(b.x+b.w); c=oy(a,b)+Math.abs(bc.y-ac.y)*.05;}
+    else if(dir==='down'){ if(b.y<a.y+a.h-4) continue; m=b.y-(a.y+a.h); c=ox(a,b)+Math.abs(bc.x-ac.x)*.05;}
+    else { if(b.y+b.h>a.y+4) continue; m=a.y-(b.y+b.h); c=ox(a,b)+Math.abs(bc.x-ac.x)*.05;}
+    const sc=Math.max(0,m)+c*2; if(sc<bs){bs=sc;best=el;gap=Math.round(m);} }
+  return best?{el:best,gap}:null;
+}
+const hex2=h=>{const m=/^#?([0-9a-f]{6})/i.exec(h||'');if(!m)return[.37,.84,1];const v=parseInt(m[1],16);return[(v>>16&255)/255,(v>>8&255)/255,(v&255)/255];};
+let accT=hex2('#E5484D'), acc=accT.slice();
+function setFocus(el){
+  if(!el) return; if(cur) cur.classList.remove('on'); cur=el; el.classList.add('on'); if(!el.closest('.topbar')) mem[screen]=el.id;
+  if(el.dataset.accent) accT=hex2(el.dataset.accent);
+  if(el.dataset.act==='fresh') spotFresh(FRESH_IDX[el.dataset.k]);
+  const isWin=el.classList.contains('win'), room=$('#room');
+  if(room){ room.classList.toggle('lit',isWin);
+    if(isWin){ const c=el.dataset.accent, v=parseInt(c.slice(1),16), rgb=`${v>>16&255},${v>>8&255},${v&255}`, i=winIndex(el);
+      room.style.background=drive?`radial-gradient(1200px 420px at ${(i+.5)/el.parentNode.children.length*100}% 104%,rgba(${rgb},.18),transparent 75%)`
+        :`radial-gradient(1200px 560px at ${12+i*19}% 108%,rgba(${rgb},.42),transparent 70%),radial-gradient(900px 420px at 80% -12%,rgba(${rgb},.16),transparent 70%),linear-gradient(0deg,rgba(${rgb},.10),transparent 60%)`; } }
+  cityUp=!!drive&&isWin&&screen==='home'&&perfLevel<1; perf.quietSince=performance.now();
+  if(drive) drive.focus(cityUp?winIndex(el):-1);
+  if(screen==='home') brightT=isWin?1.05:.78;
+}
+function nav(dir){ if(!cur){setFocus(list()[0]);return;} const nb=neighbor(cur,dir,list());
+  if(nb) setFocus(nb.el);
+  else cur.animate([{transform:'translateX(0)'},{transform:`translate${dir==='left'||dir==='right'?'X':'Y'}(${dir==='left'||dir==='up'?-6:6}px)`},{transform:'translateX(0)'}],{duration:180}); }
+
+/* ---------- screens ---------- */
+let brightT=.78, bright=.78;
+function go(name){
+  if(!SCREENS.includes(name)) return;
+  // Home (the tab, the remote's Home button, the dial) always lands on the Continue watching strip.
+  if(name==='home') mem.home='resume';
+  closeDial();
+  if(!reduce){ stage.classList.remove('glitch'); void stage.offsetWidth; stage.classList.add('glitch'); setTimeout(()=>stage.classList.remove('glitch'),360);}
+  if(name==='apps'&&!APPLIST.length) renderApps();
+  if(name==='new') renderFresh();
+  screen=name;
+  SCREENS.forEach(s=>$('#s-'+s).hidden=s!==name);
+  $$('.tab').forEach(t=>t.setAttribute('aria-current',t.dataset.v===name));
+  brightT={home:.78,resume:.55,new:.8,apps:.5}[name];
+  const el=(mem[name]&&document.getElementById(mem[name]))||$$(`#s-${name} [data-f]`)[0]||list()[0];
+  if(cur) cur.classList.remove('on'); cur=null; setFocus(el);
+}
+function splash(pkg,name,color,el,done){ if(reduce){done();return;} const r=rectOf(el), d=document.createElement('div'); d.className='splash';
+  d.style.background=`radial-gradient(circle at 50% 45%, ${color}, #050610 80%)`;
+  d.style.clipPath=`inset(${r.y}px ${1280-r.x-r.w}px ${720-r.y-r.h}px ${r.x}px round 18px)`; d.innerHTML=`<span>${esc(name)}</span>`; stage.appendChild(d);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{d.style.clipPath='inset(0px 0px 0px 0px round 0px)';}));
+  setTimeout(done,620); setTimeout(()=>d.classList.add('out'),1400); setTimeout(()=>d.remove(),1900); }
+function toast(html){ const t=document.createElement('div'); t.className='toast'; t.innerHTML=html; $('#toasts').appendChild(t);
+  const all=$$('#toasts .toast'); if(all.length>3) all[0].remove();
+  setTimeout(()=>{t.classList.add('out'); setTimeout(()=>t.remove(),320);},3200); }
+function resumeShow(s){ if(!s) return; toast(`Resuming <b>${esc(s.title)}</b>${epOf(s)?' · '+epOf(s):''} on ${esc(s.app)}`); setTimeout(()=>CK.resume(s.key),250); }
+const act={
+  go:el=>go(el.dataset.v),
+  fresh:el=>{ const it=FRESH_IDX[el.dataset.k]; if(!it) return; toast(`Opening <b>${esc(it.title)}</b> on ${esc(it.app)}`); setTimeout(()=>CK.play(it.key),250); },
+  hero:()=>{ const s=SHOWS[0]; if(s) resumeShow(s); else go('apps'); },
+  show:el=>resumeShow(SHOWS[+el.dataset.i]),
+  app:el=>splash(el.dataset.pkg,el.dataset.name,el.dataset.accent,el,()=>CK.open(el.dataset.pkg)),
+  openapp:el=>{const a=APPLIST[+el.dataset.i]; toast(`Opening ${esc(a.label)}`); setTimeout(()=>CK.open(a.pkg),200);},
+  filter:el=>{filter=el.dataset.v; renderWall(); setFocus($('#flt-'+CSS.escape(filter))||list()[0]);},
+  wifi:()=>{toast('Opening Wi‑Fi settings'); setTimeout(()=>CK.wifi(),200);},
+  usb:el=>{ if(!el.dataset.label){toast('No USB drive connected');return;} toast(`Opening ${esc(el.dataset.label)}`); setTimeout(()=>CK.usb(),200);},
+  settings:()=>{toast('Opening Settings'); setTimeout(()=>CK.settings(),200);}
+};
+let quietUntil=0;
+function press(){ if(!cur||performance.now()<quietUntil) return; const a=act[cur.dataset.act]; a&&a(cur);
+  cur.animate([{filter:'brightness(1.8)'},{filter:'brightness(1)'}],{duration:260}); }
+function hold(){ // hold OK on a show removes it, elsewhere opens the dial
+  if(cur&&cur.dataset.act==='show'){const s=SHOWS[+cur.dataset.i]; if(s){CK.remove(s.key); toast(`Removed <b>${esc(s.title)}</b> from Continue watching`); setTimeout(refresh,150);} return;}
+  openDial(); }
+function back(){ if(overlay==='dial'){closeDial();return true;} if(screen!=='home'){ go('home'); return true;} return false; }
+
+/* ---------- WebGL background ---------- */
+const cv=$('#bg'); let gl=null, U={};
+if(!DIAL_ONLY){ try{ gl=cv.getContext('webgl',{antialias:false,premultipliedAlpha:false}); }catch(e){} }
+if(gl){
+  const vs='attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
+  const fs=`precision mediump float;uniform vec2 r;uniform float t;uniform vec3 acc;uniform float br;
+  float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+  float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
+  float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<5;i++){v+=a*n(p);p=p*2.03+vec2(1.7,9.2);a*=.5;}return v;}
+  void main(){vec2 uv=gl_FragCoord.xy/r;vec2 p=uv*vec2(r.x/r.y,1.)*2.2;
+   vec2 q=vec2(fbm(p+t*.05),fbm(p+vec2(5.2,1.3)-t*.04));
+   vec2 w=vec2(fbm(p+3.*q+vec2(1.7,9.2)+t*.07),fbm(p+3.*q+vec2(8.3,2.8)-t*.06));
+   float f=fbm(p+3.*w);
+   vec3 c=mix(vec3(.043,.051,.09),vec3(.15,.11,.36),smoothstep(.2,.8,f));
+   c=mix(c,acc,smoothstep(.5,.95,f*length(w))*.85);
+   c+=acc*pow(f,5.)*.7;
+   float l=abs(fract(f*14.)-.5);c+=vec3(.37,.84,1.)*smoothstep(.035,0.,l)*.07;
+   c*=mix(.5,1.,smoothstep(1.15,.25,length(uv-.5)));
+   gl_FragColor=vec4(c*br,1.);}`;
+  const sh=(type,src)=>{const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);return s;};
+  const pr=gl.createProgram(); gl.attachShader(pr,sh(gl.VERTEX_SHADER,vs)); gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,fs)); gl.linkProgram(pr);
+  if(gl.getProgramParameter(pr,gl.LINK_STATUS)){
+    gl.useProgram(pr); const b=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,b); gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+    const loc=gl.getAttribLocation(pr,'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+    ['r','t','acc','br'].forEach(k=>U[k]=gl.getUniformLocation(pr,k)); gl.uniform2f(U.r,cv.width,cv.height);
+  } else gl=null;
+}
+if(!gl&&!DIAL_ONLY) cv.style.background='radial-gradient(circle at 70% 30%,#3B2F7A,#0B0D17 70%)';
+const t0=performance.now(); let frames=0, paused=false;
+function frame(now){
+  frames=(frames+1)%6000;
+  const raw=now-(frame.last||now), fdt=Math.min(.05,raw/1000); frame.last=now;
+  if(!paused&&screen==='home'&&drive){
+    if(!overlay) perfSample(raw);
+    // at level 2 the drive runs at half rate, so each of its frames covers two screen frames
+    frame.acc=(frame.acc||0)+fdt;
+    if(perfLevel<2||frames%2===0){ drive.frame(Math.min(.1,frame.acc),cur&&cur.classList.contains('win')?winIndex(cur):-1); frame.acc=0; } }
+  for(let i=0;i<3;i++) acc[i]+=(accT[i]-acc[i])*.06;
+  bright+=(brightT-bright)*.06;
+  // with a city up the background is mostly hidden, so it redraws every third frame and leaves the GPU to the city
+  if(gl&&!paused&&(!(cityUp||perfLevel>=1)||frames%3===0)){ gl.uniform1f(U.t,reduce?8:(now-t0)/1000); gl.uniform3f(U.acc,acc[0],acc[1],acc[2]); gl.uniform1f(U.br,bright); gl.drawArrays(gl.TRIANGLES,0,3);}
+  requestAnimationFrame(frame);
+}
+if(!DIAL_ONLY) requestAnimationFrame(frame);
+
+
+/* ---------- new for you ---------- */
+let FRESH=[], FRESH_IDX={};
+const DAYPX=140, X0=156, GW=1152;
+function renderFresh(keepFocus){
+  if(!FRESH.length) FRESH=parse(()=>CK.fresh(),[]);
+  $('#newEmpty').hidden=FRESH.length>0; $('#nGuide').hidden=!FRESH.length; $('.nspot').hidden=!FRESH.length;
+  const now=Date.now(), days=['sun','mon','tue','wed','thu','fri','sat'];
+  $('#nAxis').innerHTML=Array.from({length:7},(_,i)=>`<span style="left:${i*DAYPX+8}px">${i===0?'today':i===1?'yesterday':days[new Date(now-i*864e5).getDay()]}</span>`).join('');
+  const dated=FRESH.some(c=>c.items.some(i=>i.time>0)); $('#nAxis').hidden=!dated; $('#nGuide .now').hidden=!dated;
+  FRESH_IDX={}; let n=0;
+  $('#nRows').innerHTML=FRESH.slice(0,5).map((c,r)=>{
+    let cursor=X0+10, slot=0;
+    const items=c.items.map(it=>{
+      it.app=c.app; it.color=c.color;
+      const w=Math.max(180,Math.min(270,(it.duration/60000)*3.2+60));
+      let x=it.time>0?X0+Math.min(6,Math.max(0,Math.floor((now-it.time)/864e5)))*DAYPX+10:X0+10+(slot++)*DAYPX;
+      x=Math.max(x,cursor); if(x+w>GW) return '';
+      cursor=x+w+10; const k='n'+(n++); FRESH_IDX[k]=it;
+      const ep=epOf(it), th=it.poster?`background-image:url('${it.poster}')`:`background:${cover(hueOf(it.title))}`;
+      return `<button class="f prog${it.kind==='pick'?' pick':''}" id="fr-${k}" data-f data-act="fresh" data-k="${k}" data-accent="${c.color}" tabindex="-1" style="left:${x}px;width:${w}px"><i class="th" style="${th}"></i><span class="tx"><b>${esc(it.title)}</b><small>${[ep,it.duration?Math.round(it.duration/60000)+'m':''].filter(Boolean).join(' · ')||(it.kind==='new'?'new':'pick')}</small></span>${it.kind==='new'?'<i class="nd"></i>':''}</button>`;
+    }).join('');
+    return `<div class="grow2" style="top:${24+r*54}px"><div class="chan"><b style="color:${c.color}">${esc(c.app)}</b><small>${c.fresh?c.fresh+' new':'picks'}</small></div>${items}</div>`;
+  }).join('');
+  $('#newDot').hidden=!FRESH.some(c=>c.fresh>0);
+  if(screen==='new'&&!keepFocus){ const first=$('#nRows [data-f]'); if(first){ if(cur) cur.classList.remove('on'); cur=null; setFocus(first);} }
+}
+function spotFresh(it){
+  if(!it) return;
+  const days=it.time>0?Math.floor((Date.now()-it.time)/864e5):-1;
+  const when=it.kind==='pick'?'':days<=0?'out today':days===1?'out yesterday':days+' days ago';
+  $('#fKick').innerHTML=`<span class="ntag ${it.kind}">${it.kind==='new'?'new episode':'picked for you'}</span><span style="color:${it.color}">${esc(it.app)}</span>${when?`<span>${when}</span>`:''}`;
+  $('#fTitle').textContent=it.title;
+  $('#fMeta').textContent=[epOf(it),it.duration?Math.round(it.duration/60000)+' min':''].filter(Boolean).join(' · ');
+  $('#fDesc').textContent=it.desc||'';
+  const why=it.kind==='new'?'a new episode of a show you watch':`${it.app} picked this for you`;
+  const end=it.duration?`<span>ends <b>${hm(Date.now()+it.duration)}</b> if you start now</span>`:'';
+  $('#fWhy').innerHTML=`<span>${esc(why)}</span>${end}`;
+  const a=$('#nArt'); a.style.opacity=0;
+  setTimeout(()=>{ $('#nArtImg').style.background=it.poster?`url('${it.poster}') center 30%/cover`:cover(hueOf(it.title)); a.style.opacity=1; },160);
+}
+
+/* ---------- the night drive (nightdrive.js) and the weather ---------- */
+let drive=null, driveK=0, cityUp=false;
+
+/* Slow TVs: Home measures its own frame pacing for a few calm seconds and lightens up if frames are missed.
+   level 0 = everything; 1 = no city behind the dock, the background redraws every third frame;
+   2 = also the night drive at the lowest resolution and half rate. Remembered across starts, only ever
+   stepping up (perf-v1 in local storage; ck.perf(0) resets it). #perf=N in the URL forces a level. */
+const PERF_KEY='perf-v1';
+let perfLevel=0; try{ perfLevel=Math.min(2,+localStorage.getItem(PERF_KEY)||0); }catch(e){}
+const forced=/perf=(\d)/.exec(location.hash); if(forced) perfLevel=Math.min(2,+forced[1]);
+const perf={on:!forced&&perfLevel<2, n:0, slow:0, quietSince:performance.now()+3000};   // skip the first seconds: start-up work
+function perfSample(ms){
+  if(!perf.on||performance.now()<perf.quietSince+1500) return;    // not while focus moves or a city is being drawn
+  perf.n++; if(ms>25) perf.slow++;                                 // a frame is 16.7 ms at 60 Hz, 20 ms at 50 Hz
+  if(perf.n<240) return;                                           // about four seconds
+  const missed=perf.slow/perf.n; perf.n=perf.slow=0;
+  if(missed>.15) setPerf(perfLevel+1); else perf.on=false;         // smooth: stop measuring
+}
+function setPerf(l){
+  const was=perfLevel; perfLevel=Math.max(0,Math.min(2,l)); try{ localStorage.setItem(PERF_KEY,perfLevel); }catch(e){}
+  console.warn(`home: performance level ${was} -> ${perfLevel}`);
+  if(perfLevel>=1&&drive){ drive.focus(-1); cityUp=false; }
+  if((perfLevel>=2)!==(was>=2)) startDrive();
+  perf.on=perfLevel<2; perf.n=perf.slow=0; perf.quietSince=performance.now();
+}
+const driveRes=()=>Math.max(1,Math.min(2,(window.devicePixelRatio||1)*S));
+function startDrive(){
+  const wins=$$('#dock .win'); drive=null;
+  // the road needs three to five windows; with fewer (or on an old WebView) each window gets a plain sky
+  if(window.NightDrive&&wins.length>=3&&wins.length<=5){
+    try{ driveK=perfLevel>=2?1:driveRes();
+      drive=NightDrive.start({apps:wins.map(el=>({c:el.dataset.accent,key:appKey(el.dataset.pkg),canvas:el.querySelector('canvas')})),
+        track:$('#track'), trackBg:$('#trackbg'), imm:[$('#immA'),$('#immB')], k:driveK});
+      if(cur&&cur.classList.contains('win')) drive.focus(winIndex(cur));
+      return; }
+    catch(e){ console.error('night drive: '+e); drive=null; } }
+  wins.forEach(el=>{ const cv=el.querySelector('canvas'), c=cv.getContext('2d'); cv.width=220; cv.height=150;
+    const g=c.createLinearGradient(0,0,0,150); g.addColorStop(0,el.dataset.accent+'38'); g.addColorStop(1,'#070912'); c.fillStyle=g; c.fillRect(0,0,220,150); });
+}
+const winIndex=el=>[...el.parentNode.children].indexOf(el);
+addEventListener('resize',()=>{ if(drive&&Math.abs(driveRes()-driveK)>.2) startDrive(); });
+
+// the place comes from the theme (config key weather: latitude, longitude, fahrenheit); no place, no weather line
+const wxPlace=()=>HOME.weather&&isFinite(HOME.weather.lat)&&isFinite(HOME.weather.lon)?HOME.weather:null;
+const wxKey=w=>w?`${(+w.lat).toFixed(2)},${(+w.lon).toFixed(2)},${w.f?'f':'c'}`:'';
+const wxUrl=w=>`https://api.open-meteo.com/v1/forecast?latitude=${w.lat}&longitude=${w.lon}&current=temperature_2m,weather_code,is_day`
+  +`&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=1${w.f?'&temperature_unit=fahrenheit':''}`;
+const WX_ICON={   // 24px line icons, drawn like the header's other icons
+  sun:'<circle cx="12" cy="12" r="4" stroke="#FFC861"/><path stroke="#FFC861" d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>',
+  moon:'<path stroke="#C9D3FF" d="M20 14.2A8 8 0 1 1 9.8 4a6.3 6.3 0 0 0 10.2 10.2z"/>',
+  cloud:'<path stroke="#AEB6CC" d="M7.5 18.5h9.5a3.8 3.8 0 0 0 .4-7.6A5.6 5.6 0 0 0 6.7 11a3.8 3.8 0 0 0 .8 7.5z"/>',
+  sunCloud:'<path stroke="#FFC861" d="M8 3v1.4M3.6 7.6H2.2M4.9 4.5l1 1M11.1 4.5l-1 1"/><path stroke="#FFC861" d="M5.2 10.4a3 3 0 0 1 5.6-2"/><path stroke="#AEB6CC" d="M9 19.5h8.5a3.4 3.4 0 0 0 .3-6.8 5 5 0 0 0-9.4-.1A3.4 3.4 0 0 0 9 19.5z"/>',
+  moonCloud:'<path stroke="#C9D3FF" d="M11.6 6.6A4.6 4.6 0 0 1 5.4 12a4.6 4.6 0 0 0 4.4-7.4 4.6 4.6 0 0 1 1.8 2z"/><path stroke="#AEB6CC" d="M9 19.5h8.5a3.4 3.4 0 0 0 .3-6.8 5 5 0 0 0-9.4-.1A3.4 3.4 0 0 0 9 19.5z"/>',
+  fog:'<path stroke="#AEB6CC" d="M4 9h16M6 13h12M4 17h16"/>',
+  rain:'<path stroke="#AEB6CC" d="M7.5 15h9.5a3.8 3.8 0 0 0 .4-7.6A5.6 5.6 0 0 0 6.7 7.5a3.8 3.8 0 0 0 .8 7.5z"/><path stroke="#7FB7FF" d="M8.5 18l-1 2.5M12.5 18l-1 2.5M16.5 18l-1 2.5"/>',
+  storm:'<path stroke="#AEB6CC" d="M7.5 15h9.5a3.8 3.8 0 0 0 .4-7.6A5.6 5.6 0 0 0 6.7 7.5a3.8 3.8 0 0 0 .8 7.5z"/><path stroke="#FFC861" d="M12.5 15.5l-2 3.2h3l-2 3.3"/>',
+  snow:'<path stroke="#AEB6CC" d="M7.5 15h9.5a3.8 3.8 0 0 0 .4-7.6A5.6 5.6 0 0 0 6.7 7.5a3.8 3.8 0 0 0 .8 7.5z"/><path stroke="#E8ECF6" d="M8.5 19h.01M12 20.5h.01M15.5 19h.01" stroke-width="2.6"/>'};
+function wxKind(c,day){   // WMO weather code -> [words, icon]
+  if(c===0) return ['clear',day?'sun':'moon'];
+  if(c===1) return ['mostly clear',day?'sun':'moon'];
+  if(c===2) return ['partly cloudy',day?'sunCloud':'moonCloud'];
+  if(c===3) return ['cloudy','cloud'];
+  if(c===45||c===48) return ['fog','fog'];
+  if(c>=51&&c<=57) return ['drizzle','rain'];
+  if(c>=61&&c<=67) return [c===65||c===67?'heavy rain':c===61||c===66?'light rain':'rain','rain'];
+  if(c>=71&&c<=77||c===85||c===86) return ['snow','snow'];
+  if(c>=80&&c<=82) return [c===82?'heavy showers':'showers','rain'];
+  if(c>=95) return ['thunderstorm','storm'];
+  return ['—','cloud'];
+}
+let WX=null;   // {w, got}: the last good reading and when it arrived
+function showWx(){
+  const el=$('#wx'), age=WX?Date.now()-WX.got:Infinity;
+  if(age>6*36e5||WX.place!==wxKey(wxPlace())){ el.hidden=true; return; }                 // too old to be worth showing
+  const w=WX.w, [words,icon]=wxKind(w.code,w.day);
+  el.querySelector('svg').innerHTML=WX_ICON[icon];
+  el.querySelector('b').textContent=Math.round(w.t)+'°';
+  el.querySelector('span').textContent=[words,`${Math.round(w.hi)}°/${Math.round(w.lo)}°`,w.rain>=40?`rain ${w.rain}%`:'',
+    age>45*6e4?'as of '+hm(new Date(w.at).getTime()):''].filter(Boolean).join(' · ');
+  el.hidden=false;
+}
+function loadWx(){
+  const place=wxPlace(); if(!place){ $('#wx').hidden=true; return; }
+  fetch(wxUrl(place),{cache:'no-store'}).then(r=>{ if(!r.ok) throw new Error('weather '+r.status); return r.json(); }).then(j=>{
+    const c=j.current, d=j.daily;
+    WX={w:{t:c.temperature_2m,code:c.weather_code,day:c.is_day,hi:d.temperature_2m_max[0],lo:d.temperature_2m_min[0],rain:d.precipitation_probability_max[0],at:c.time},got:Date.now(),place:wxKey(place)};
+    try{ localStorage.setItem('wx',JSON.stringify(WX)); }catch(e){}
+    showWx(); }).catch(e=>{ console.warn('weather: '+e.message); if(WX) showWx(); });
+}
+
+/* ---------- clock ---------- */
+function tick(){ const d=new Date(), hh=String(d.getHours()%12||12), mm=String(d.getMinutes()).padStart(2,'0');
+  $('#clk').innerHTML=`${hh}<span style="opacity:${d.getSeconds()%2?1:.25}">:</span>${mm}<small>${d.getHours()<12?'am':'pm'}</small>`;
+  $('#clkD').textContent=d.toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short'}).toLowerCase().replace(',','');
+  if(d.getSeconds()%5===0) renderStatus(); }
+
+/* ---------- dial ---------- */
+const DIAL=[
+ {n:'continue',s:'watching',run:()=>DIAL_ONLY?CK.dialDone('resume'):go('resume')},
+ {n:'all apps',s:'launcher',run:()=>DIAL_ONLY?CK.dialDone('apps'):go('apps')},
+ {n:'wi‑fi',s:'settings',run:()=>{CK.wifi(); if(DIAL_ONLY) CK.dialDone('');}},
+ {n:'inputs',s:'hdmi · tv',run:()=>{CK.inputs(); if(DIAL_ONLY) CK.dialDone('');}},
+ {n:'sleep 30m',s:'timer',run:()=>{const ok=CK.sleep(30); if(DIAL_ONLY){CK.dialDone('');return;}
+   toast(ok?'The screen turns off at '+hm(Date.now()+18e5):'The sleep timer needs the dial service turned on');}},
+ {n:'new for you',s:'from your apps',run:()=>DIAL_ONLY?CK.dialDone('new'):go('new')}];
+let dialSel=0;
+function arc(cx,cy,r1,r2,a0,a1){const p=(r,a)=>[cx+r*Math.cos(a),cy+r*Math.sin(a)];const[x0,y0]=p(r2,a0),[x1,y1]=p(r2,a1),[x2,y2]=p(r1,a1),[x3,y3]=p(r1,a0);return`M${x0} ${y0}A${r2} ${r2} 0 0 1 ${x1} ${y1}L${x2} ${y2}A${r1} ${r1} 0 0 0 ${x3} ${y3}Z`;}
+(function buildDial(){ const cx=640,cy=360,N=DIAL.length,step=Math.PI*2/N,gap=.035; let s='';
+  DIAL.forEach((d,i)=>{ const a0=-Math.PI/2-step/2+i*step+gap, a1=a0+step-gap*2, am=(a0+a1)/2, lx=cx+178*Math.cos(am), ly=cy+178*Math.sin(am);
+    s+=`<g class="seg" data-i="${i}" style="transition-delay:${i*30}ms"><path d="${arc(cx,cy,118,240,a0,a1)}"/><text x="${lx}" y="${ly-8}">${d.n}</text><text class="s2" x="${lx}" y="${ly+12}">${d.s}</text></g>`; });
+  s+=`<circle cx="640" cy="360" r="104" fill="#0B0D17" stroke="#2A2F52"/><g id="dialSweep"><path d="M640 248 L640 262" stroke="#FF6B3D" stroke-width="4" stroke-linecap="round"/></g>
+  <text id="dialC1" x="640" y="350" text-anchor="middle" font-family="Bricolage Grotesque,sans-serif" font-weight="700" font-size="24" fill="#ECEAF7"></text>
+  <text x="640" y="378" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="11.5" fill="#8F93B8">← → pick · OK run · back close</text>`;
+  $('#dialSvg').innerHTML=s; })();
+function paintDial(){ $$('#dialSvg .seg').forEach((g,i)=>g.classList.toggle('sel',i===dialSel)); $('#dialC1').textContent=DIAL[dialSel].n; $('#dialSweep').style.transform=`rotate(${dialSel*60}deg)`; }
+function openDial(){ overlay='dial'; stage.classList.add('ovl'); const d=$('#dial'); d.hidden=false; d.classList.add('in'); void d.offsetWidth; requestAnimationFrame(()=>d.classList.remove('in')); paintDial(); }
+function closeDial(){ if(overlay!=='dial') return; overlay=null; stage.classList.remove('ovl'); $('#dial').hidden=true; if(DIAL_ONLY) CK.dialDone(''); }
+function dialMove(k){ dialSel=(dialSel+k+DIAL.length)%DIAL.length; paintDial(); }
+function dialPick(){ const d=DIAL[dialSel]; overlay=null; stage.classList.remove('ovl'); $('#dial').hidden=true; d.run(); }
+
+/* ---------- keys: the remote arrives as arrow keys and Enter ---------- */
+let holdT=null, held=false;
+const isOk=e=>e.key==='Enter'||e.keyCode===13||e.keyCode===23;
+document.addEventListener('keydown',e=>{
+  const k=e.key;
+  if(overlay==='dial'){
+    if(k==='ArrowRight'||k==='ArrowDown') dialMove(1); else if(k==='ArrowLeft'||k==='ArrowUp') dialMove(-1);
+    else if(isOk(e)){ if(!e.repeat&&!held) dialPick(); } else if(k==='Escape') closeDial(); else return;
+    e.preventDefault(); return; }
+  if(isOk(e)){ e.preventDefault(); if(e.repeat) return; held=false; clearTimeout(holdT); holdT=setTimeout(()=>{held=true; hold();},450); return; }
+  if(k.startsWith('Arrow')){ nav(k.slice(5).toLowerCase()); e.preventDefault(); return; }
+  if(k==='Escape'){ back(); e.preventDefault(); return; }
+  if(['1','2','3'].includes(k)){ go(SCREENS[+k-1]); e.preventDefault(); }
+});
+document.addEventListener('keyup',e=>{ if(!isOk(e)) return; e.preventDefault(); if(holdT===null) { held=false; return; }
+  clearTimeout(holdT); holdT=null; if(!held&&overlay===null) press(); held=false; });
+
+/* ---------- called by the launcher ---------- */
+function refresh(){ fit(); renderHome(); renderShows(); renderStatus(); if(screen==='new') renderFresh(true); if(screen==='apps') renderApps();
+  const keep=cur&&document.getElementById(cur.id); if(cur) cur.classList.remove('on'); cur=null;
+  setFocus(keep||(mem[screen]&&document.getElementById(mem[screen]))||$$(`#s-${screen} [data-f]`)[0]); }
+window.ck={
+  refresh, back, go:n=>{quietUntil=performance.now()+700; go(n);},
+  freshReady:()=>{ FRESH=parse(()=>CK.fresh(),[]); $('#newDot').hidden=!FRESH.some(c=>c.fresh>0); if(screen==='new') renderFresh(true); },
+  visible:v=>{paused=!v; if(v){ quietUntil=performance.now()+700; perf.quietSince=performance.now(); } },
+  perf:l=>{ if(l!=null) setPerf(+l); return perfLevel; },
+  dial:()=>{ dialSel=0; openDial(); },
+  key:k=>{ // dial-only overlay: keys come from DialService
+    if(k==='left'||k==='up') dialMove(-1); else if(k==='right'||k==='down') dialMove(1); else if(k==='ok') dialPick(); else if(k==='back') closeDial(); }
+};
+
+/* ---------- start ---------- */
+fit();
+if(DIAL_ONLY){ dialSel=0; openDial(); }
+else { refresh(); go('home'); stage.classList.remove('glitch'); tick(); setInterval(tick,1000);
+  try{ WX=JSON.parse(localStorage.getItem('wx')||'null'); }catch(e){} if(WX) showWx();
+  loadWx(); setInterval(loadWx,15*60*1000); setInterval(()=>{ if(WX) showWx(); },60*1000); }
+})();
+</script>
+</body></html>

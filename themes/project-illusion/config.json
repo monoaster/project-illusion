@@ -1,0 +1,18 @@
+{
+  "greeting_name": "",
+  "show_brand": true,
+  "dock_apps": [
+    "com.netflix.ninja",
+    "com.amazon.amazonvideo.livingroom",
+    "com.google.android.youtube.tv",
+    "in.startv.hotstar",
+    "com.crunchyroll.crunchyroid"
+  ],
+  "dock_colors": [
+    "com.netflix.ninja=#E50914",
+    "com.amazon.amazonvideo.livingroom=#1FB6FF",
+    "com.google.android.youtube.tv=#FF2D2D",
+    "in.startv.hotstar=#4F7BFF",
+    "com.crunchyroll.crunchyroid=#F47521"
+  ]
+}

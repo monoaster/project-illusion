@@ -1,0 +1,14 @@
+# secrets and local machine state
+tools/adbkey/
+tools/venv/
+__pycache__/
+launcher/local.properties
+.DS_Store
+# build outputs
+launcher/.gradle/
+launcher/build/
+launcher/app/build/
+*.apk
+*.aab
+launcher/hs_err_pid*.log
+launcher/replay_pid*.log

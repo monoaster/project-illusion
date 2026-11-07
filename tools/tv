@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Run tv.py with the repo's own Python (tools/venv), so the guide's commands work as written:
+#   TV_HOST=192.168.1.50 tools/tv --probe
+#   TV_HOST=192.168.1.50 tools/tv 'pm list packages'
+D="$(cd "$(dirname "$0")" && pwd)"
+PY="$D/venv/bin/python"; [ -x "$PY" ] || PY="$D/venv/Scripts/python.exe"
+[ -x "$PY" ] || { echo "First run: python3 -m venv tools/venv && tools/venv/bin/pip install -r tools/requirements.txt" >&2; exit 1; }
+[ -n "${TV_HOST:-}" ] || { echo "Set TV_HOST to the TV's IP address (tools/find_tv.py finds it), e.g. TV_HOST=192.168.1.50 tools/tv --probe" >&2; exit 1; }
+exec "$PY" -I "$D/tv.py" "$@"
