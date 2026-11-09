@@ -148,7 +148,7 @@ both want to be the TV's Home.
 ## Credits
 
 - [CleanYourTV](https://github.com/Gathin23/cleanyourtv) by Gathin: the inspiration, and the source of the
-  ADB tools and the Continue watching store (MIT licence, see `LICENSE`).
+  ADB tools and the Continue watching store (MIT licence, see `LICENSE-CleanYourTV`).
 - Fonts: Bricolage Grotesque, Instrument Sans and JetBrains Mono (SIL OFL,
   `launcher/FONT-LICENSE-OFL.txt`).
 
@@ -160,3 +160,12 @@ Car pictures: Wikimedia Commons photos, backgrounds removed, then illustrated an
 - Vantage: Mr.choppers (CC BY-SA 3.0).
 
 The screenshots show show and film posters from the apps on the test TV. They belong to their owners.
+
+## Licence
+
+Project Illusion is under the [Apache License 2.0](LICENSE). The parts from CleanYourTV stay under
+their [MIT licence](LICENSE-CleanYourTV), the fonts under the SIL OFL, and the car pictures under
+the Creative Commons licences listed above. [NOTICE](NOTICE) sums this up; keep it with any copy
+you share.
+
+The licence doesn't cover the name. If you ship a modified version, give it a different name.

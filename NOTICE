@@ -1,0 +1,16 @@
+Project Illusion
+Copyright 2026 the Project Illusion authors
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+It includes software from CleanYourTV (https://github.com/Gathin23/cleanyourtv),
+Copyright (c) 2026 Gathin, under the MIT License (see LICENSE-CleanYourTV).
+
+It bundles the fonts Bricolage Grotesque, Instrument Sans and JetBrains Mono under the
+SIL Open Font License 1.1 (see launcher/FONT-LICENSE-OFL.txt).
+
+The car pictures are adapted from Wikimedia Commons photos under Creative Commons
+licences; each picture's author and licence are listed in README.md.
+
+"Project Illusion" is the project's name. The Apache License does not grant permission
+to use it for modified versions.
